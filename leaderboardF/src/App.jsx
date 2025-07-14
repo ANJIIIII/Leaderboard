@@ -269,7 +269,7 @@ const App = () => {
             </h2>
             
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {history.slice(0, 10).map((entry, index) => (
+              {history?.slice(0, 10).map((entry, index) => (
                 <div
                   key={entry._id}
                   className="bg-white/20 backdrop-blur-sm p-3 rounded-lg border border-white/30"
