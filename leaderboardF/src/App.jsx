@@ -11,7 +11,7 @@ const App = () => {
   const [showAddUser, setShowAddUser] = useState(false);
   const [lastClaimResult, setLastClaimResult] = useState(null);
 
-  const API_BASE = 'https://leaderboard-liard-seven.vercel.app/api'; // Update to your deployed backend
+  const API_BASE = 'https://leaderboard-9yz5-git-main-anjalis-projects-3cdb875a.vercel.app/api'; // Update to your deployed backend
 
   // Fetch users
   const fetchUsers = async () => {
