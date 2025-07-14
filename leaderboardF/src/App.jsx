@@ -181,7 +181,7 @@ const App = () => {
                 className="w-full px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-purple-300"
               >
                 <option value="">Choose a user...</option>
-                {users.map(user => (
+                {users?.map(user => (
                   <option key={user._id} value={user._id} className="text-gray-800">
                     {user.name} ({user.totalPoints} points)
                   </option>
@@ -238,7 +238,7 @@ const App = () => {
             </h2>
             
             <div className="space-y-3">
-              {users.map((user, index) => (
+              {users?.map((user, index) => (
                 <div
                   key={user._id}
                   className={`${getRankColor(user.rank)} p-4 rounded-lg text-white shadow-lg`}
