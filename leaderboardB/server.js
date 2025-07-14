@@ -125,6 +125,8 @@ app.get('/api/users', async (req, res) => {
     res.json(users);
 
   } catch (error) {
+   console.log(error);
+ 
 
     res.status(500).json({ error: error.message });
 
@@ -162,6 +164,8 @@ app.post('/api/users', async (req, res) => {
     res.status(201).json(user);
 
   } catch (error) {
+   console.log(error);
+ 
 
     res.status(500).json({ error: error.message });
 
@@ -229,6 +233,8 @@ app.post('/api/claim-points', async (req, res) => {
     });
 
   } catch (error) {
+   console.log(error);
+ 
 
     res.status(500).json({ error: error.message });
 
@@ -251,6 +257,8 @@ app.get('/api/history', async (req, res) => {
     res.json(history);
 
   } catch (error) {
+   console.log(error);
+ 
 
     res.status(500).json({ error: error.message });
 
@@ -275,6 +283,8 @@ app.get('/api/history/:userId', async (req, res) => {
     res.json(history);
 
   } catch (error) {
+   console.log(error);
+ 
 
     res.status(500).json({ error: error.message });
 
