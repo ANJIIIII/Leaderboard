@@ -6,7 +6,7 @@ const app = express();
 require('dotenv').config();
 
 app.use(cors({
-  origin: "https://leaderboard-vbfm.vercel.app/", 
+  origin: "https://leaderboard-vbfm.vercel.app", 
 }));
 app.use(express.json());
 
