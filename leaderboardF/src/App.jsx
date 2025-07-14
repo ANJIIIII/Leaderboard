@@ -11,7 +11,7 @@ const App = () => {
   const [showAddUser, setShowAddUser] = useState(false);
   const [lastClaimResult, setLastClaimResult] = useState(null);
 
-  const API_BASE = 'https://leaderboard-9yz5.vercel.app/api';
+  const API_BASE = 'https://leaderboard-liard-seven.vercel.app/api'; // Update to your deployed backend
 
   // Fetch users
   const fetchUsers = async () => {
@@ -53,7 +53,7 @@ const App = () => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         setMessage(data.message);
         setLastClaimResult(data);
@@ -87,7 +87,7 @@ const App = () => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         setMessage(`User "${newUserName}" added successfully!`);
         setNewUserName('');
@@ -130,8 +130,7 @@ const App = () => {
   useEffect(() => {
     fetchUsers();
     fetchHistory();
-    
-    // Clear message after 3 seconds
+
     if (message) {
       const timer = setTimeout(() => setMessage(''), 3000);
       return () => clearTimeout(timer);
@@ -181,14 +180,14 @@ const App = () => {
                 className="w-full px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-purple-300"
               >
                 <option value="">Choose a user...</option>
-                {users?.map(user => (
+                {Array.isArray(users) && users.map(user => (
                   <option key={user._id} value={user._id} className="text-gray-800">
                     {user.name} ({user.totalPoints} points)
                   </option>
                 ))}
               </select>
             </div>
-            
+
             <div className="flex gap-2">
               <button
                 onClick={claimPoints}
@@ -197,7 +196,7 @@ const App = () => {
               >
                 {loading ? 'Claiming...' : '🎲 Claim Points'}
               </button>
-              
+
               <button
                 onClick={() => setShowAddUser(!showAddUser)}
                 className="px-4 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white rounded-lg font-medium hover:from-green-500 hover:to-blue-600 transition-all"
@@ -236,9 +235,9 @@ const App = () => {
               <Trophy className="w-6 h-6" />
               Leaderboard
             </h2>
-            
+
             <div className="space-y-3">
-              {users?.map((user, index) => (
+              {Array.isArray(users) && users.map((user, index) => (
                 <div
                   key={user._id}
                   className={`${getRankColor(user.rank)} p-4 rounded-lg text-white shadow-lg`}
@@ -261,15 +260,15 @@ const App = () => {
             </div>
           </div>
 
-       
+          {/* History */}
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
             <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
               <Clock className="w-6 h-6" />
               Recent Activity
             </h2>
-            
+
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {history?.slice(0, 10).map((entry, index) => (
+              {Array.isArray(history) && history.slice(0, 10).map((entry, index) => (
                 <div
                   key={entry._id}
                   className="bg-white/20 backdrop-blur-sm p-3 rounded-lg border border-white/30"
