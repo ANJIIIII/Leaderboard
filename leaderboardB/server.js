@@ -166,9 +166,14 @@ app.get('/api/history/:userId', async (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
+const PORTT = process.env.PORT || 5000;
+
+app.get('/', async(req,res)=>{
+   res.send("heloo hiii")
+});
+
+app.listen(PORTT, async () => {
+  console.log(`Server running on port ${PORTT}`);
   await initializeUsers();
   await updateRankings();
 });
