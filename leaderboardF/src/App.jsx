@@ -1,223 +1,317 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const app = express();
-const dotenv = require('dotenv');
+import React, { useState, useEffect } from 'react';
+import { Crown, Trophy, Medal, Award, Plus, Zap, Clock, User } from 'lucide-react';
 
-dotenv.config();
+const App = () => {
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState('');
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [message, setMessage] = useState('');
+  const [newUserName, setNewUserName] = useState('');
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [lastClaimResult, setLastClaimResult] = useState(null);
 
-// Middleware
-app.use(cors({
-  origin: "https://leaderboard-vbfm.vercel.app",
-  credentials: true
-}));
-app.use(express.json());
+  const API_BASE = 'https://leaderboard-9yz5.vercel.app/api';
 
-// Database connection function
-const connectDb = async () => {
-  try {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGO_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
-      console.log("MongoDB connected successfully");
-    }
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
-    throw error;
-  }
-};
-
-// User Schema
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
-  totalPoints: { type: Number, default: 0 },
-  rank: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now }
-});
-
-// Points History Schema
-const pointsHistorySchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  userName: { type: String, required: true },
-  pointsAwarded: { type: Number, required: true },
-  timestamp: { type: Date, default: Date.now }
-});
-
-const User = mongoose.model('User', userSchema);
-const PointsHistory = mongoose.model('PointsHistory', pointsHistorySchema);
-
-// Initialize default users
-// Initialize default users
-const initializeUsers = async () => {
-  try {
-    const count = await User.countDocuments();
-    if (count === 0) {
-      const defaultUsers = [
-        'Rahul', 'Kamal', 'Sanak', 'Priya', 'Amit', 
-        'Sneha', 'Rohan', 'Kavya', 'Arjun', 'Meera'
-      ];
-      
-      for (const name of defaultUsers) {
-        const user = new User({ name });
-        await user.save();
+  // Fetch users
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/users`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      console.log('Default users created');
+      const data = await response.json();
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setMessage('Failed to load users. Please try again.');
+      setUsers([]);
+    } finally {
+      setInitialLoading(false);
     }
-  } catch (error) {
-    console.error('Error initializing users:', error);
-  }
+  };
+
+  // Fetch history
+  const fetchHistory = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/history`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setHistory(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching history:', error);
+      setHistory([]);
+    }
+  };
+
+  // Claim points
+  const claimPoints = async () => {
+    if (!selectedUser) {
+      setMessage('Please select a user first!');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/claim-points`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: selectedUser }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessage(data.message);
+        setLastClaimResult(data);
+        await fetchUsers();
+        await fetchHistory();
+      } else {
+        setMessage(data.error || 'Error claiming points');
+      }
+    } catch (error) {
+      setMessage('Error claiming points');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add new user
+  const addUser = async () => {
+    if (!newUserName.trim()) {
+      setMessage('Please enter a valid name!');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newUserName.trim() }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessage(`User "${newUserName}" added successfully!`);
+        setNewUserName('');
+        setShowAddUser(false);
+        await fetchUsers();
+      } else {
+        setMessage(data.error || 'Error adding user');
+      }
+    } catch (error) {
+      setMessage('Error adding user');
+      console.error('Error:', error);
+    }
+  };
+
+  // Get rank icon
+  const getRankIcon = (rank) => {
+    switch (rank) {
+      case 1: return <Crown className="w-6 h-6 text-yellow-500" />;
+      case 2: return <Trophy className="w-6 h-6 text-gray-400" />;
+      case 3: return <Medal className="w-6 h-6 text-amber-600" />;
+      default: return <Award className="w-6 h-6 text-gray-300" />;
+    }
+  };
+
+  // Get rank color
+  const getRankColor = (rank) => {
+    switch (rank) {
+      case 1: return 'bg-gradient-to-r from-yellow-400 to-yellow-600';
+      case 2: return 'bg-gradient-to-r from-gray-300 to-gray-500';
+      case 3: return 'bg-gradient-to-r from-amber-400 to-amber-600';
+      default: return 'bg-gradient-to-r from-blue-400 to-blue-600';
+    }
+  };
+
+  // Format time
+  const formatTime = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString();
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchHistory();
+    
+    // Clear message after 3 seconds
+    if (message) {
+      const timer = setTimeout(() => setMessage(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-pink-600 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">
+            🎯 Points Ranking System
+          </h1>
+          <p className="text-purple-100">Select a user and claim random points!</p>
+        </div>
+
+        {/* Loading indicator */}
+        {initialLoading && (
+          <div className="text-center mb-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            <p className="text-white mt-2">Loading...</p>
+          </div>
+        )}
+
+        {/* Message */}
+        {message && (
+          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 mb-6 text-center">
+            <p className="text-white font-medium">{message}</p>
+          </div>
+        )}
+
+        {/* Last Claim Result */}
+        {lastClaimResult && (
+          <div className="bg-green-500/20 backdrop-blur-sm rounded-lg p-4 mb-6 text-center border border-green-300/30">
+            <div className="flex items-center justify-center gap-2 text-white">
+              <Zap className="w-5 h-5 text-yellow-400" />
+              <span className="font-bold">{lastClaimResult.pointsAwarded} points</span>
+              <span>awarded to</span>
+              <span className="font-bold">{lastClaimResult.user.name}</span>
+            </div>
+          </div>
+        )}
+
+        {/* User Selection and Claim */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-8 border border-white/20">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="flex-1">
+              <label className="block text-white text-sm font-medium mb-2">
+                Select User:
+              </label>
+              <select
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-purple-300"
+              >
+                <option value="">Choose a user...</option>
+                {users.map(user => (
+                  <option key={user._id} value={user._id} className="text-gray-800">
+                    {user.name} ({user.totalPoints} points)
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={claimPoints}
+                disabled={loading || !selectedUser}
+                className="px-6 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg font-medium hover:from-yellow-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {loading ? 'Claiming...' : '🎲 Claim Points'}
+              </button>
+              
+              <button
+                onClick={() => setShowAddUser(!showAddUser)}
+                className="px-4 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white rounded-lg font-medium hover:from-green-500 hover:to-blue-600 transition-all"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Add User Form */}
+          {showAddUser && (
+            <div className="mt-4 p-4 bg-white/10 rounded-lg border border-white/20">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  placeholder="Enter user name..."
+                  className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-purple-300 placeholder-white/60"
+                />
+                <button
+                  onClick={addUser}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-all"
+                >
+                  Add User
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Leaderboard */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+            <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+              <Trophy className="w-6 h-6" />
+              Leaderboard
+            </h2>
+            
+            <div className="space-y-3">
+              {users.map((user, index) => (
+                <div
+                  key={user._id}
+                  className={`${getRankColor(user.rank)} p-4 rounded-lg text-white shadow-lg`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {getRankIcon(user.rank)}
+                      <div>
+                        <p className="font-bold text-lg">{user.name}</p>
+                        <p className="text-sm opacity-90">Rank #{user.rank}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold">{user.totalPoints}</p>
+                      <p className="text-sm opacity-90">points</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent History */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+            <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+              <Clock className="w-6 h-6" />
+              Recent Activity
+            </h2>
+            
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {history.slice(0, 10).map((entry, index) => (
+                <div
+                  key={entry._id}
+                  className="bg-white/20 backdrop-blur-sm p-3 rounded-lg border border-white/30"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-white" />
+                      <span className="text-white font-medium">{entry.userName}</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-yellow-400 font-bold">+{entry.pointsAwarded} pts</p>
+                      <p className="text-white/60 text-xs">{formatTime(entry.timestamp)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-// Calculate and update rankings
-// Calculate and update rankings
-const updateRankings = async () => {
-  try {
-    const users = await User.find().sort({ totalPoints: -1 });
-    
-    for (let i = 0; i < users.length; i++) {
-      users[i].rank = i + 1;
-      await users[i].save();
-    }
-  } catch (error) {
-    console.error('Error updating rankings:', error);
-  }
-};
-
-// Routes
-
-// Get all users with rankings
-// Get all users with rankings
-app.get('/api/users', async (req, res) => {
-  try {
-    await connectDb();
-    await initializeUsers();
-    
-    const users = await User.find().sort({ totalPoints: -1 });
-    res.json(users);
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Add new user
-// Add new user
-app.post('/api/users', async (req, res) => {
-  try {
-    await connectDb();
-    
-    const { name } = req.body;
-    
-    if (!name || name.trim() === '') {
-      return res.status(400).json({ error: 'Name is required' });
-    }
-    
-    const existingUser = await User.findOne({ name: name.trim() });
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-    
-    const user = new User({ name: name.trim() });
-    await user.save();
-    await updateRankings();
-    
-    res.status(201).json(user);
-  } catch (error) {
-    console.error('Error adding user:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Claim points for a user
-// Claim points for a user
-app.post('/api/claim-points', async (req, res) => {
-  try {
-    await connectDb();
-    
-    const { userId } = req.body;
-    
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID is required' });
-    }
-    
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    // Generate random points between 1 to 10
-    const randomPoints = Math.floor(Math.random() * 10) + 1;
-    
-    // Update user's total points
-    user.totalPoints += randomPoints;
-    await user.save();
-    
-    // Create history entry
-    const history = new PointsHistory({
-      userId: user._id,
-      userName: user.name,
-      pointsAwarded: randomPoints
-    });
-    await history.save();
-    
-    // Update rankings
-    await updateRankings();
-    
-    res.json({
-      user,
-      pointsAwarded: randomPoints,
-      message: `${user.name} earned ${randomPoints} points!`
-    });
-  } catch (error) {
-    console.error('Error claiming points:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get points history
-app.get('/api/history', async (req, res) => {
-  try {
-    await connectDb();
-    
-    const history = await PointsHistory.find()
-      .sort({ timestamp: -1 })
-      .limit(50);
-    res.json(history);
-  } catch (error) {
-    console.error('Error fetching history:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get user-specific history
-app.get('/api/history/:userId', async (req, res) => {
-  try {
-    await connectDb();
-    
-    const { userId } = req.params;
-    const history = await PointsHistory.find({ userId })
-      .sort({ timestamp: -1 })
-      .limit(20);
-    res.json(history);
-  } catch (error) {
-    console.error('Error fetching user history:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Root endpoint
-app.get('/', async (req, res) => {
-  res.json({ message: "Points Ranking System API is running!" });
-});
-
-// For serverless deployment (Vercel)
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
-
-module.exports = app;
+export default App;
